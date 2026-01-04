@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@pulselab/mcp-servers"><img src="https://img.shields.io/npm/v/@pulselab/mcp-servers?color=00B4A0&label=npm" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/mcp-servers-cli"><img src="https://img.shields.io/npm/v/mcp-servers-cli?color=00B4A0&label=npm" alt="npm"></a>
   <a href="https://github.com/joshduffy/mcp-servers/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
   <a href="https://github.com/joshduffy/mcp-servers/stargazers"><img src="https://img.shields.io/github/stars/joshduffy/mcp-servers?color=yellow" alt="Stars"></a>
   <a href="https://pulselab.cc"><img src="https://img.shields.io/badge/by-pulselab.cc-FF6B9D" alt="pulselab.cc"></a>
@@ -44,7 +44,7 @@
 ## Install in 30 Seconds
 
 ```bash
-npx @pulselab/mcp-servers init
+npx mcp-servers-cli init
 ```
 
 That's it. The CLI will:
@@ -55,7 +55,7 @@ That's it. The CLI will:
 **Or install manually:**
 
 ```bash
-npm install -g @pulselab/mcp-servers
+npm install -g mcp-servers-cli
 
 # Add a specific server
 mcp-servers add linear
@@ -168,7 +168,7 @@ Claude: From your daily notes (Jan 2-4):
 ### Auto-Configuration (Recommended)
 
 ```bash
-npx @pulselab/mcp-servers init
+npx mcp-servers-cli init
 ```
 
 ### Manual Configuration
@@ -222,7 +222,7 @@ Add to `~/.claude/mcp.json`:
 └─────────────────────────┬───────────────────────────────┘
                           │ MCP Protocol
 ┌─────────────────────────▼───────────────────────────────┐
-│                   @pulselab/mcp-servers                 │
+│                     mcp-servers-cli                     │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
 │  │  Linear  │ │ Postgres │ │  Notion  │ │ Obsidian │  │
 │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘  │
@@ -287,7 +287,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ## Comparison
 
-| Feature | @pulselab/mcp-servers | Other MCP Servers |
+| Feature | mcp-servers-cli | Other MCP Servers |
 |---------|----------------------|-------------------|
 | One-command install | ✅ `npx init` | ❌ Clone + build |
 | Auto-configuration | ✅ Detects your tools | ❌ Manual JSON editing |

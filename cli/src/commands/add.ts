@@ -106,7 +106,7 @@ export async function add(serverName: string): Promise<void> {
   // Add to config
   addServer(serverName, {
     command: 'npx',
-    args: ['@pulselab/mcp-servers', 'run', serverName],
+    args: ['mcp-servers-cli', 'run', serverName],
     env,
   });
 

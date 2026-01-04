@@ -131,7 +131,7 @@ async function setupServer(detection: DetectionResult): Promise<boolean> {
   // Add to config
   addServer(detection.server, {
     command: 'npx',
-    args: ['@pulselab/mcp-servers', 'run', detection.server],
+    args: ['mcp-servers-cli', 'run', detection.server],
     env,
   });
 
