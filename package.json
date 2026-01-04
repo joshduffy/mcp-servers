@@ -1,0 +1,28 @@
+{
+  "name": "mcp-servers",
+  "version": "0.1.0",
+  "description": "Collection of Model Context Protocol (MCP) servers for AI coding tools",
+  "private": true,
+  "workspaces": [
+    "servers/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspaces --if-present"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "claude",
+    "linear",
+    "postgres",
+    "notion"
+  ],
+  "author": "Josh Duffy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joshduffy/mcp-servers.git"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "linear-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Linear issue tracking",
+  "main": "dist/index.js",
+  "bin": {
+    "linear-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "keywords": ["mcp", "linear", "issues"],
+  "author": "Josh Duffy",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "@linear/sdk": "^25.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}
