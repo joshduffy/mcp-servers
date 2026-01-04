@@ -147,6 +147,6 @@ export function isServerAvailable(name: string): boolean {
 
 export function isServerImplemented(name: string): boolean {
   // These servers have actual implementations
-  const implemented = ['linear', 'postgres', 'notion', 'obsidian', 'sqlite', 'github'];
+  const implemented = ['linear', 'postgres', 'notion', 'obsidian', 'sqlite', 'github', 'filesystem'];
   return implemented.includes(name);
 }
