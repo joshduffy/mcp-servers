@@ -1,0 +1,36 @@
+{
+  "name": "@pulselab/github-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for GitHub repos, issues, and PRs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "github-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "github",
+    "git",
+    "ai",
+    "claude",
+    "model-context-protocol"
+  ],
+  "author": "Josh Duffy",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@octokit/rest": "^20.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
