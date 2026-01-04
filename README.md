@@ -25,7 +25,7 @@
 ## Demo
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/joshduffy/mcp-servers/main/assets/demo.gif" width="700" alt="MCP Servers Demo">
+  <img src="https://raw.githubusercontent.com/joshduffy/mcp-servers/main/assets/demo.svg" width="800" alt="MCP Servers Demo">
 </p>
 
 ```bash
