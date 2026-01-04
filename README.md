@@ -67,20 +67,15 @@ mcp-servers add obsidian
 
 ## Available Servers
 
-| Server | Description | Install |
-|--------|-------------|---------|
-| **linear** | Issue tracking & project management | `mcp-servers add linear` |
-| **postgres** | Query local/remote PostgreSQL databases | `mcp-servers add postgres` |
-| **notion** | Search & create Notion pages | `mcp-servers add notion` |
-| **obsidian** | Search your local Obsidian vault | `mcp-servers add obsidian` |
-
-### Coming Soon
-
-| Server | Description | Status |
-|--------|-------------|--------|
-| **sqlite** | Query local SQLite databases | In Progress |
-| **todoist** | Task management | Planned |
-| **cal** | Calendar integration | Planned |
+| Server | Description | Type | Install |
+|--------|-------------|------|---------|
+| **linear** | Issue tracking & project management | Cloud | `mcp-servers add linear` |
+| **postgres** | Query PostgreSQL databases | Local | `mcp-servers add postgres` |
+| **notion** | Search & create Notion pages | Cloud | `mcp-servers add notion` |
+| **obsidian** | Search your local Obsidian vault | Local | `mcp-servers add obsidian` |
+| **sqlite** | Query local SQLite databases | Local | `mcp-servers add sqlite` |
+| **github** | Access repos, issues, and PRs | Cloud | `mcp-servers add github` |
+| **filesystem** | Read and search local files | Local | `mcp-servers add filesystem` |
 
 ---
 
@@ -161,6 +156,56 @@ Claude: From your daily notes (Jan 2-4):
         - TODO: Set up Google provider
 ```
 
+### GitHub: Manage Repos & Issues
+
+```
+You: "What PRs need my review?"
+Claude: Found 3 open PRs requesting your review:
+        #142 - Add dark mode support (from @alex)
+        #139 - Fix memory leak in worker (from @sam)
+        #138 - Update dependencies (from dependabot)
+
+You: "Create an issue for the login bug"
+Claude: Created issue #156: "Login redirect fails on Safari"
+        https://github.com/myorg/app/issues/156
+```
+
+### SQLite: Query Local Databases
+
+```
+You: "What tables are in the analytics database?"
+Claude: Found 5 tables:
+        - events (1.2M rows) - user events with timestamps
+        - sessions (89K rows) - session tracking
+        - users (12K rows) - user profiles
+        ...
+
+You: "Show me the top pages by views"
+Claude: SELECT page, COUNT(*) as views FROM events
+        WHERE type = 'pageview' GROUP BY page ORDER BY views DESC
+
+        /dashboard    45,231
+        /settings     12,847
+        /profile       8,392
+```
+
+### Filesystem: Read & Search Files
+
+```
+You: "Find all TypeScript files with 'auth' in the name"
+Claude: Found 8 files matching **/*auth*.ts:
+        src/lib/auth.ts
+        src/middleware/authMiddleware.ts
+        src/hooks/useAuth.ts
+        ...
+
+You: "Search for TODO comments in the src folder"
+Claude: Found 12 TODOs:
+        src/api/users.ts:42 - TODO: Add rate limiting
+        src/components/Form.tsx:89 - TODO: Validate email format
+        ...
+```
+
 ---
 
 ## Configuration
@@ -208,29 +253,38 @@ Add to `~/.claude/mcp.json`:
 | Server | Variable | Description |
 |--------|----------|-------------|
 | linear | `LINEAR_API_KEY` | [Get your API key](https://linear.app/settings/api) |
-| postgres | `POSTGRES_URL` | Connection string |
+| postgres | `POSTGRES_URL` | PostgreSQL connection string |
 | notion | `NOTION_API_KEY` | [Create integration](https://www.notion.so/my-integrations) |
 | obsidian | `OBSIDIAN_VAULT` | Path to your vault folder |
+| sqlite | `SQLITE_PATH` | Path to SQLite database file |
+| github | `GITHUB_TOKEN` | [Create token](https://github.com/settings/tokens) |
+| filesystem | `FS_ROOT` | Root directory to allow access to |
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Claude / Cursor / IDE                │
-└─────────────────────────┬───────────────────────────────┘
-                          │ MCP Protocol
-┌─────────────────────────▼───────────────────────────────┐
-│                     mcp-servers-cli                     │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
-│  │  Linear  │ │ Postgres │ │  Notion  │ │ Obsidian │  │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘  │
-└───────┼────────────┼────────────┼────────────┼─────────┘
-        │            │            │            │
-        ▼            ▼            ▼            ▼
-   Linear API    Local DB    Notion API   Local Files
-   (HTTPS)      (localhost)   (HTTPS)     (filesystem)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          Claude / Cursor / IDE                              │
+└─────────────────────────────────┬───────────────────────────────────────────┘
+                                  │ MCP Protocol
+┌─────────────────────────────────▼───────────────────────────────────────────┐
+│                            mcp-servers-cli                                  │
+│                                                                             │
+│   Cloud Servers              Local Servers                                  │
+│   ┌────────┐ ┌────────┐      ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐  │
+│   │ Linear │ │ Notion │      │Postgres│ │Obsidian│ │ SQLite │ │  Files │  │
+│   └───┬────┘ └───┬────┘      └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘  │
+│       │          │               │          │          │          │        │
+│   ┌───┴────┐     │               │          │          │          │        │
+│   │ GitHub │     │               │          │          │          │        │
+│   └───┬────┘     │               │          │          │          │        │
+└───────┼──────────┼───────────────┼──────────┼──────────┼──────────┼────────┘
+        │          │               │          │          │          │
+        ▼          ▼               ▼          ▼          ▼          ▼
+   External     External        Local      Local      Local      Local
+     APIs         APIs         Database    Vault     Database   Filesystem
 ```
 
 All processing happens locally. API calls go directly from your machine to the service—we're never in the middle.
@@ -277,7 +331,7 @@ npm run create-server my-server
 
 We welcome contributions! Areas we'd love help with:
 
-- **New servers**: SQLite, Todoist, Cal.com, Raycast
+- **New servers**: Todoist, Cal.com, Raycast, Slack, Discord
 - **Improvements**: Better error messages, more tools per server
 - **Documentation**: Tutorials, video guides
 
