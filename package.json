@@ -1,15 +1,22 @@
 {
-  "name": "mcp-servers",
+  "name": "@pulselab/mcp-servers",
   "version": "0.1.0",
-  "description": "Collection of Model Context Protocol (MCP) servers for AI coding tools",
-  "private": true,
+  "description": "Privacy-first MCP servers for Claude - Linear, Postgres, Notion, Obsidian",
+  "main": "cli/dist/index.js",
+  "bin": {
+    "mcp-servers": "cli/dist/index.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:cli && npm run build:servers",
+    "build:cli": "tsc -p cli/tsconfig.json",
+    "build:servers": "npm run build --workspaces --if-present",
+    "dev": "tsc -p cli/tsconfig.json --watch",
+    "prepublishOnly": "npm run build"
+  },
   "workspaces": [
     "servers/*"
   ],
-  "scripts": {
-    "build": "npm run build --workspaces",
-    "dev": "npm run dev --workspaces --if-present"
-  },
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -17,12 +24,30 @@
     "claude",
     "linear",
     "postgres",
-    "notion"
+    "notion",
+    "obsidian",
+    "privacy"
   ],
   "author": "Josh Duffy",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/joshduffy/mcp-servers.git"
-  }
+  },
+  "homepage": "https://pulselab.cc",
+  "dependencies": {
+    "inquirer": "^9.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "cli/dist",
+    "servers/*/dist",
+    "servers/*/package.json"
+  ]
 }
