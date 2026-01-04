@@ -260,6 +260,33 @@ Add to `~/.claude/mcp.json`:
 | github | `GITHUB_TOKEN` | [Create token](https://github.com/settings/tokens) |
 | filesystem | `FS_ROOT` | Root directory to allow access to |
 
+### Rate Limiting
+
+API-based servers include built-in rate limiting to prevent accidental quota exhaustion. Default: **30 requests/minute**.
+
+| Server | Variable | Default |
+|--------|----------|---------|
+| linear | `LINEAR_RATE_LIMIT` | 30/min |
+| notion | `NOTION_RATE_LIMIT` | 30/min |
+| github | `GITHUB_RATE_LIMIT` | 30/min |
+
+To adjust limits:
+
+```json
+{
+  "servers": {
+    "github": {
+      "command": "mcp-servers",
+      "args": ["run", "github"],
+      "env": {
+        "GITHUB_TOKEN": "ghp_xxxxx",
+        "GITHUB_RATE_LIMIT": "60"
+      }
+    }
+  }
+}
+```
+
 ---
 
 ## Architecture
