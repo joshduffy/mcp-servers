@@ -9,6 +9,7 @@ import {
 import { Client } from '@notionhq/client';
 
 const API_KEY = process.env.NOTION_API_KEY;
+const RATE_LIMIT_RPM = parseInt(process.env.NOTION_RATE_LIMIT || '30', 10); // requests per minute
 
 if (!API_KEY) {
   console.error('NOTION_API_KEY environment variable is required');
@@ -16,6 +17,37 @@ if (!API_KEY) {
 }
 
 const notion = new Client({ auth: API_KEY });
+
+// Rate limiter using sliding window
+class RateLimiter {
+  private timestamps: number[] = [];
+  private readonly windowMs: number;
+  private readonly maxRequests: number;
+
+  constructor(maxRequestsPerMinute: number) {
+    this.windowMs = 60 * 1000;
+    this.maxRequests = maxRequestsPerMinute;
+  }
+
+  async checkLimit(): Promise<void> {
+    const now = Date.now();
+    this.timestamps = this.timestamps.filter(t => now - t < this.windowMs);
+
+    if (this.timestamps.length >= this.maxRequests) {
+      const oldestInWindow = this.timestamps[0];
+      const waitTime = this.windowMs - (now - oldestInWindow);
+      throw new Error(
+        `Rate limit exceeded (${this.maxRequests}/min). ` +
+        `Try again in ${Math.ceil(waitTime / 1000)} seconds. ` +
+        `Set NOTION_RATE_LIMIT env var to adjust.`
+      );
+    }
+
+    this.timestamps.push(now);
+  }
+}
+
+const rateLimiter = new RateLimiter(RATE_LIMIT_RPM);
 
 const server = new Server(
   {
@@ -170,6 +202,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   try {
+    // Check rate limit before processing
+    await rateLimiter.checkLimit();
+
     switch (name) {
       case 'notion_search': {
         const { query, filter, limit = 10 } = args as any;

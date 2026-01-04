@@ -1,6 +1,6 @@
 {
   "name": "mcp-servers-cli",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Privacy-first MCP servers for Claude - Linear, Postgres, Notion, Obsidian",
   "main": "cli/dist/index.js",
   "bin": {
@@ -12,6 +12,9 @@
     "build:cli": "tsc -p cli/tsconfig.json",
     "build:servers": "npm run build --workspaces --if-present",
     "dev": "tsc -p cli/tsconfig.json --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "prepublishOnly": "npm run build"
   },
   "workspaces": [
@@ -40,7 +43,9 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.3.0"
+    "@vitest/coverage-v8": "^4.0.16",
+    "typescript": "^5.3.0",
+    "vitest": "^4.0.16"
   },
   "engines": {
     "node": ">=18.0.0"

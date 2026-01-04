@@ -10,8 +10,47 @@ import { Octokit } from '@octokit/rest';
 
 // Configuration
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const RATE_LIMIT_RPM = parseInt(process.env.GITHUB_RATE_LIMIT || '30', 10); // requests per minute
 
 let octokit: Octokit | null = null;
+
+// Rate limiter using sliding window
+class RateLimiter {
+  private timestamps: number[] = [];
+  private readonly windowMs: number;
+  private readonly maxRequests: number;
+
+  constructor(maxRequestsPerMinute: number) {
+    this.windowMs = 60 * 1000; // 1 minute window
+    this.maxRequests = maxRequestsPerMinute;
+  }
+
+  async checkLimit(): Promise<void> {
+    const now = Date.now();
+    // Remove timestamps outside the window
+    this.timestamps = this.timestamps.filter(t => now - t < this.windowMs);
+
+    if (this.timestamps.length >= this.maxRequests) {
+      const oldestInWindow = this.timestamps[0];
+      const waitTime = this.windowMs - (now - oldestInWindow);
+      throw new Error(
+        `Rate limit exceeded (${this.maxRequests}/min). ` +
+        `Try again in ${Math.ceil(waitTime / 1000)} seconds. ` +
+        `Set GITHUB_RATE_LIMIT env var to adjust.`
+      );
+    }
+
+    this.timestamps.push(now);
+  }
+
+  getRemaining(): number {
+    const now = Date.now();
+    this.timestamps = this.timestamps.filter(t => now - t < this.windowMs);
+    return Math.max(0, this.maxRequests - this.timestamps.length);
+  }
+}
+
+const rateLimiter = new RateLimiter(RATE_LIMIT_RPM);
 
 function getOctokit(): Octokit {
   if (!octokit) {
@@ -330,6 +369,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const client = getOctokit();
 
   try {
+    // Check rate limit before processing
+    await rateLimiter.checkLimit();
+
     switch (name) {
       case 'list_repos': {
         const { user, type = 'all', limit = 30 } = args as {
