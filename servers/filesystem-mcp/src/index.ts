@@ -481,6 +481,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'list_directory': {
         const { path = '', recursive = false } = args as { path?: string; recursive?: boolean };
         const dirPath = resolvePath(path || '.');
+        await validateRealPath(dirPath); // Security: check symlinks
 
         const entries = await listDir(dirPath, recursive);
 
@@ -543,6 +544,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'get_info': {
         const { path } = args as { path: string };
         const filePath = resolvePath(path);
+        await validateRealPath(filePath); // Security: check symlinks
 
         const stats = await stat(filePath);
 
@@ -564,6 +566,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'tree': {
         const { path = '', depth = 3 } = args as { path?: string; depth?: number };
         const dirPath = resolvePath(path || '.');
+        await validateRealPath(dirPath); // Security: check symlinks
 
         const tree = await buildTree(dirPath, Math.min(depth, 5));
 

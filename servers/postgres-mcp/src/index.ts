@@ -222,7 +222,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const trimmedQuery = query.trim().toLowerCase();
 
         // Block dangerous keywords anywhere in query
-        const dangerous = ['insert', 'update', 'delete', 'drop', 'alter', 'create', 'truncate', 'grant', 'revoke', 'copy'];
+        const dangerous = [
+          'insert', 'update', 'delete', 'drop', 'alter', 'create', 'truncate',
+          'grant', 'revoke', 'copy', 'execute', 'lock', 'into'
+        ];
         for (const keyword of dangerous) {
           // Check for keyword as whole word (not part of column/table name)
           const regex = new RegExp(`\\b${keyword}\\b`, 'i');
@@ -289,7 +292,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // Security: Validate query is read-only (same rules as pg_query)
         const trimmedQuery = query.trim().toLowerCase();
 
-        const dangerous = ['insert', 'update', 'delete', 'drop', 'alter', 'create', 'truncate', 'grant', 'revoke', 'copy'];
+        const dangerous = [
+          'insert', 'update', 'delete', 'drop', 'alter', 'create', 'truncate',
+          'grant', 'revoke', 'copy', 'execute', 'lock', 'into'
+        ];
         for (const keyword of dangerous) {
           const regex = new RegExp(`\\b${keyword}\\b`, 'i');
           if (regex.test(query)) {

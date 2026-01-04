@@ -137,7 +137,8 @@ function executeQuery(sql: string): QueryResult {
 
     // Block semicolons to prevent multi-statement attacks
     // (SQLite's better-sqlite3 already blocks this, but belt-and-suspenders)
-    if (sql.includes(';') && sql.indexOf(';') < sql.length - 1) {
+    // Regex matches semicolon followed by any non-whitespace
+    if (/;[\s]*\S/.test(sql)) {
       throw new Error('Multiple statements are not allowed');
     }
   }
