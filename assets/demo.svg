@@ -1,12 +1,54 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" width="800" height="520">
   <style>
-    .terminal { font-family: 'SF Mono', 'Monaco', 'Menlo', monospace; font-size: 13px; }
+    .terminal { font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace; font-size: 13px; }
     .prompt { fill: #00B4A0; }
     .command { fill: #E5E5E5; }
     .output { fill: #A0A0A0; }
     .highlight { fill: #FF6B9D; }
     .success { fill: #4ADE80; }
     .dim { fill: #666666; }
+
+    /* Typing animation */
+    @keyframes typing {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .cursor {
+      animation: blink 1s infinite;
+      fill: #00B4A0;
+    }
+
+    .line1 { animation: fadeIn 0.3s ease-out 0.5s both; }
+    .line2 { animation: fadeIn 0.3s ease-out 1.0s both; }
+    .line3 { animation: fadeIn 0.3s ease-out 1.3s both; }
+    .line4 { animation: fadeIn 0.3s ease-out 1.6s both; }
+    .line5 { animation: fadeIn 0.3s ease-out 1.9s both; }
+    .line6 { animation: fadeIn 0.3s ease-out 2.2s both; }
+    .line7 { animation: fadeIn 0.3s ease-out 2.5s both; }
+
+    .line8 { animation: fadeIn 0.3s ease-out 3.5s both; }
+    .line9 { animation: fadeIn 0.3s ease-out 4.0s both; }
+    .line10 { animation: fadeIn 0.3s ease-out 4.3s both; }
+    .line11 { animation: fadeIn 0.3s ease-out 4.5s both; }
+    .line12 { animation: fadeIn 0.3s ease-out 4.7s both; }
+    .line13 { animation: fadeIn 0.3s ease-out 4.9s both; }
+
+    .line14 { animation: fadeIn 0.3s ease-out 6.0s both; }
+    .line15 { animation: fadeIn 0.3s ease-out 6.5s both; }
+    .line16 { animation: fadeIn 0.3s ease-out 6.8s both; }
+    .line17 { animation: fadeIn 0.3s ease-out 7.0s both; }
+    .line18 { animation: fadeIn 0.3s ease-out 7.2s both; }
   </style>
 
   <!-- Terminal window -->
@@ -22,38 +64,38 @@
   <circle cx="60" cy="16" r="6" fill="#27CA3F"/>
 
   <!-- Title -->
-  <text x="400" y="20" text-anchor="middle" class="terminal dim">mcp-servers demo</text>
+  <text x="400" y="20" text-anchor="middle" class="terminal dim">mcp-servers — zsh</text>
 
   <!-- Terminal content -->
   <g transform="translate(20, 50)" class="terminal">
     <!-- Install command -->
-    <text y="0"><tspan class="prompt">$</tspan><tspan class="command"> npx @pulselab/mcp-servers init</tspan></text>
-    <text y="24" class="output">Detecting installed tools...</text>
-    <text y="44" class="success">✓ Found Linear API key</text>
-    <text y="64" class="success">✓ Found Obsidian vault at ~/Documents/Notes</text>
-    <text y="84" class="success">✓ Found PostgreSQL at localhost:5432</text>
-    <text y="104" class="output">Writing config to ~/.claude/mcp.json...</text>
-    <text y="124" class="success">✓ MCP servers configured!</text>
+    <text y="0" class="line1"><tspan class="prompt">❯</tspan><tspan class="command"> npx mcp-servers-cli init</tspan></text>
+    <text y="24" class="output line2">🔍 Detecting installed tools...</text>
+    <text y="48" class="success line3">✓ Linear API key found in environment</text>
+    <text y="68" class="success line4">✓ Obsidian vault: ~/Documents/Notes</text>
+    <text y="88" class="success line5">✓ PostgreSQL: localhost:5432/myapp</text>
+    <text y="108" class="success line6">✓ GitHub token configured</text>
+    <text y="132" class="success line7">✅ Configured 4 MCP servers in ~/.claude/mcp.json</text>
 
     <!-- Divider -->
-    <text y="160" class="dim">─────────────────────────────────────────────────────────</text>
+    <line x1="0" y1="155" x2="760" y2="155" stroke="#333" stroke-width="1" class="line8"/>
 
-    <!-- Claude interaction -->
-    <text y="190"><tspan class="prompt">claude></tspan><tspan class="command"> What bugs are assigned to me in Linear?</tspan></text>
-    <text y="220" class="output">Searching Linear issues...</text>
-    <text y="250" class="output">Found <tspan class="highlight">3 bugs</tspan> assigned to you:</text>
-    <text y="274" class="output">  1. AUTH-142: Login redirect fails on Safari <tspan class="dim">(High)</tspan></text>
-    <text y="294" class="output">  2. API-89: Rate limiting returns 500 <tspan class="dim">(Medium)</tspan></text>
-    <text y="314" class="output">  3. UI-234: Dark mode toggle flickers <tspan class="dim">(Low)</tspan></text>
+    <!-- Linear query -->
+    <text y="180" class="line8"><tspan class="prompt">❯</tspan><tspan class="command"> claude "What bugs are assigned to me?"</tspan></text>
+    <text y="208" class="output line9">Using tool: <tspan class="highlight">linear_list_issues</tspan></text>
+    <text y="236" class="output line10">Found <tspan class="highlight">3 bugs</tspan> assigned to you:</text>
+    <text y="260" class="output line11">  • <tspan class="command">AUTH-142</tspan> Login redirect fails on Safari <tspan class="dim">(High, In Progress)</tspan></text>
+    <text y="280" class="output line12">  • <tspan class="command">API-89</tspan> Rate limiter returns 500 error <tspan class="dim">(Medium, Todo)</tspan></text>
+    <text y="300" class="output line13">  • <tspan class="command">UI-234</tspan> Dark mode toggle flickers <tspan class="dim">(Low, Backlog)</tspan></text>
 
     <!-- Divider -->
-    <text y="350" class="dim">─────────────────────────────────────────────────────────</text>
+    <line x1="0" y1="323" x2="760" y2="323" stroke="#333" stroke-width="1" class="line14"/>
 
-    <!-- Obsidian query -->
-    <text y="380"><tspan class="prompt">claude></tspan><tspan class="command"> Find my notes about authentication</tspan></text>
-    <text y="410" class="output">Searching Obsidian vault...</text>
-    <text y="440" class="output">Found <tspan class="highlight">2 notes</tspan>:</text>
-    <text y="464" class="output">  1. <tspan class="highlight">Auth/OAuth2-PKCE.md</tspan> - PKCE flow implementation notes</text>
-    <text y="484" class="output">  2. <tspan class="highlight">Projects/Login-Redesign.md</tspan> - Auth system refactor</text>
+    <!-- Postgres query -->
+    <text y="348" class="line14"><tspan class="prompt">❯</tspan><tspan class="command"> claude "How many users signed up this week?"</tspan></text>
+    <text y="376" class="output line15">Using tool: <tspan class="highlight">pg_query</tspan></text>
+    <text y="404" class="dim line16">SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '7 days'</text>
+    <text y="432" class="output line17">Result: <tspan class="highlight">847</tspan> new users this week</text>
+    <text y="460" class="success line18">↑ 23% compared to last week (689 users)</text>
   </g>
 </svg>
