@@ -59,6 +59,28 @@ function getDatabase(): Database.Database {
   return db;
 }
 
+// Security: Validate identifier names to prevent SQL injection
+// SQLite identifiers can contain letters, digits, underscores, and $ (but we restrict to safer subset)
+function validateIdentifier(name: string, type: 'table' | 'column' | 'schema' = 'table'): string {
+  // Allow alphanumeric, underscore, and common characters in identifiers
+  // SQLite allows almost any character in double-quoted identifiers, but we restrict for safety
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    // Check if it's a valid identifier that just needs quoting (spaces, etc.)
+    // Only allow alphanumeric, spaces, underscores, and hyphens
+    if (!/^[a-zA-Z0-9_ -]+$/.test(name)) {
+      throw new Error(`Invalid ${type} name: contains disallowed characters`);
+    }
+  }
+  // Return the name - it will be used with double-quote escaping
+  return name;
+}
+
+// Security: Safely quote an identifier for SQL
+function quoteIdentifier(name: string): string {
+  // Escape any double quotes by doubling them (SQL standard)
+  return `"${name.replace(/"/g, '""')}"`;
+}
+
 function listTables(): TableInfo[] {
   const database = getDatabase();
 
@@ -72,8 +94,11 @@ function listTables(): TableInfo[] {
     .all() as { name: string; type: string }[];
 
   return tables.map((table) => {
+    // Validate table name from sqlite_master (should be safe, but defense in depth)
+    const safeName = quoteIdentifier(table.name);
+
     // Get column info
-    const columns = database.prepare(`PRAGMA table_info("${table.name}")`).all() as {
+    const columns = database.prepare(`PRAGMA table_info(${safeName})`).all() as {
       name: string;
       type: string;
       notnull: number;
@@ -82,7 +107,7 @@ function listTables(): TableInfo[] {
     }[];
 
     // Get row count
-    const countResult = database.prepare(`SELECT COUNT(*) as count FROM "${table.name}"`).get() as {
+    const countResult = database.prepare(`SELECT COUNT(*) as count FROM ${safeName}`).get() as {
       count: number;
     };
 
@@ -102,6 +127,9 @@ function listTables(): TableInfo[] {
 }
 
 function describeTable(tableName: string): TableInfo | null {
+  // Validate user-provided table name
+  validateIdentifier(tableName, 'table');
+
   const tables = listTables();
   return tables.find((t) => t.name.toLowerCase() === tableName.toLowerCase()) || null;
 }
@@ -167,12 +195,19 @@ function searchTables(searchTerm: string, tableName?: string): { table: string; 
   const database = getDatabase();
   const results: { table: string; matches: Record<string, unknown>[] }[] = [];
 
+  // Validate user-provided table name if specified
+  if (tableName) {
+    validateIdentifier(tableName, 'table');
+  }
+
   const tables = tableName ? [{ name: tableName }] : listTables();
 
   for (const table of tables) {
     try {
+      const safeTableName = quoteIdentifier(table.name);
+
       // Get text columns
-      const columns = database.prepare(`PRAGMA table_info("${table.name}")`).all() as {
+      const columns = database.prepare(`PRAGMA table_info(${safeTableName})`).all() as {
         name: string;
         type: string;
       }[];
@@ -184,10 +219,10 @@ function searchTables(searchTerm: string, tableName?: string): { table: string; 
 
       if (textColumns.length === 0) continue;
 
-      // Build search query
-      const conditions = textColumns.map((col) => `"${col.name}" LIKE '%' || ? || '%'`).join(' OR ');
+      // Build search query with safely quoted column names
+      const conditions = textColumns.map((col) => `${quoteIdentifier(col.name)} LIKE '%' || ? || '%'`).join(' OR ');
 
-      const query = `SELECT * FROM "${table.name}" WHERE ${conditions} LIMIT 10`;
+      const query = `SELECT * FROM ${safeTableName} WHERE ${conditions} LIMIT 10`;
       const params = textColumns.map(() => searchTerm);
 
       const matches = database.prepare(query).all(...params) as Record<string, unknown>[];
@@ -206,8 +241,12 @@ function searchTables(searchTerm: string, tableName?: string): { table: string; 
 function getTableSample(tableName: string, limit: number = 5): Record<string, unknown>[] {
   const database = getDatabase();
 
+  // Validate user-provided table name
+  validateIdentifier(tableName, 'table');
+  const safeTableName = quoteIdentifier(tableName);
+
   try {
-    return database.prepare(`SELECT * FROM "${tableName}" LIMIT ?`).all(limit) as Record<string, unknown>[];
+    return database.prepare(`SELECT * FROM ${safeTableName} LIMIT ?`).all(limit) as Record<string, unknown>[];
   } catch (error) {
     throw new Error(`Failed to sample table: ${error instanceof Error ? error.message : error}`);
   }

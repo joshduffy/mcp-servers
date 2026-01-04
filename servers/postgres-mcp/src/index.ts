@@ -23,6 +23,25 @@ const connectionConfig = process.env.POSTGRES_URL
 
 const pool = new Pool(connectionConfig);
 
+// Security: Validate identifier names to prevent SQL injection
+function validateIdentifier(name: string, type: 'table' | 'schema' = 'table'): string {
+  // PostgreSQL identifiers: letters, digits, underscores (must start with letter or underscore)
+  // We allow a subset for safety
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    // Check if it's a valid identifier that just needs quoting
+    if (!/^[a-zA-Z0-9_ -]+$/.test(name)) {
+      throw new Error(`Invalid ${type} name: contains disallowed characters`);
+    }
+  }
+  return name;
+}
+
+// Security: Safely quote a PostgreSQL identifier
+function quoteIdentifier(name: string): string {
+  // Escape any double quotes by doubling them (SQL standard)
+  return `"${name.replace(/"/g, '""')}"`;
+}
+
 const server = new Server(
   {
     name: 'postgres-mcp',
@@ -143,6 +162,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'pg_list_tables': {
         const schema = (args as any).schema || 'public';
 
+        // Validate schema name
+        validateIdentifier(schema, 'schema');
+
         const result = await pool.query(
           `SELECT table_name, table_type
            FROM information_schema.tables
@@ -163,6 +185,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'pg_describe_table': {
         const { table, schema = 'public' } = args as any;
+
+        // Validate table and schema names
+        validateIdentifier(table, 'table');
+        validateIdentifier(schema, 'schema');
 
         const columnsResult = await pool.query(
           `SELECT
@@ -352,6 +378,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'pg_table_stats': {
         const { table, schema = 'public' } = args as any;
+
+        // Validate table and schema names
+        validateIdentifier(table, 'table');
+        validateIdentifier(schema, 'schema');
 
         const result = await pool.query(
           `SELECT
