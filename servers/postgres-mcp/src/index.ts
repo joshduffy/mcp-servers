@@ -218,9 +218,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'pg_query': {
         const { query, limit = 100 } = args as any;
 
-        // Security: Only allow SELECT statements
+        // Security: Validate query is read-only
         const trimmedQuery = query.trim().toLowerCase();
-        if (!trimmedQuery.startsWith('select')) {
+
+        // Block dangerous keywords anywhere in query
+        const dangerous = ['insert', 'update', 'delete', 'drop', 'alter', 'create', 'truncate', 'grant', 'revoke', 'copy'];
+        for (const keyword of dangerous) {
+          // Check for keyword as whole word (not part of column/table name)
+          const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+          if (regex.test(query)) {
+            return {
+              content: [{ type: 'text', text: `Error: Query contains forbidden keyword: ${keyword.toUpperCase()}` }],
+              isError: true,
+            };
+          }
+        }
+
+        // Must start with SELECT or WITH (for CTEs)
+        if (!trimmedQuery.startsWith('select') && !trimmedQuery.startsWith('with')) {
           return {
             content: [
               {
@@ -238,39 +253,76 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           safeQuery = `${query} LIMIT ${limit}`;
         }
 
-        const result = await pool.query(safeQuery);
+        // Execute in read-only transaction for additional safety
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN TRANSACTION READ ONLY');
+          const result = await client.query(safeQuery);
+          await client.query('COMMIT');
 
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(
-                {
-                  rowCount: result.rowCount,
-                  rows: result.rows,
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    rowCount: result.rowCount,
+                    rows: result.rows,
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          await client.query('ROLLBACK');
+          throw error;
+        } finally {
+          client.release();
+        }
       }
 
       case 'pg_explain': {
         const { query, analyze = false } = args as any;
 
-        const explainQuery = analyze
-          ? `EXPLAIN ANALYZE ${query}`
-          : `EXPLAIN ${query}`;
+        // Security: Validate query is read-only (same rules as pg_query)
+        const trimmedQuery = query.trim().toLowerCase();
 
-        const result = await pool.query(explainQuery);
+        const dangerous = ['insert', 'update', 'delete', 'drop', 'alter', 'create', 'truncate', 'grant', 'revoke', 'copy'];
+        for (const keyword of dangerous) {
+          const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+          if (regex.test(query)) {
+            return {
+              content: [{ type: 'text', text: `Error: Query contains forbidden keyword: ${keyword.toUpperCase()}` }],
+              isError: true,
+            };
+          }
+        }
 
-        const plan = result.rows.map((r) => r['QUERY PLAN']).join('\n');
+        if (!trimmedQuery.startsWith('select') && !trimmedQuery.startsWith('with')) {
+          return {
+            content: [{ type: 'text', text: 'Error: Only SELECT queries can be explained for safety.' }],
+            isError: true,
+          };
+        }
 
-        return {
-          content: [{ type: 'text', text: plan }],
-        };
+        // Execute in read-only transaction (EXPLAIN ANALYZE will execute the query)
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN TRANSACTION READ ONLY');
+          const explainQuery = analyze ? `EXPLAIN ANALYZE ${query}` : `EXPLAIN ${query}`;
+          const result = await client.query(explainQuery);
+          await client.query('COMMIT');
+
+          const plan = result.rows.map((r) => r['QUERY PLAN']).join('\n');
+          return { content: [{ type: 'text', text: plan }] };
+        } catch (error) {
+          await client.query('ROLLBACK');
+          throw error;
+        } finally {
+          client.release();
+        }
       }
 
       case 'pg_list_schemas': {
@@ -339,6 +391,16 @@ async function main() {
     console.error('Failed to connect to database:', error);
     process.exit(1);
   }
+
+  // Graceful shutdown
+  const shutdown = async () => {
+    console.error('Shutting down...');
+    await pool.end();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

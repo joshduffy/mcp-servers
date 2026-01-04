@@ -109,19 +109,36 @@ function describeTable(tableName: string): TableInfo | null {
 function executeQuery(sql: string): QueryResult {
   const database = getDatabase();
 
-  // Basic SQL injection prevention - only allow SELECT statements in read-only mode
+  // Security: Only allow read-only queries
   if (READ_ONLY) {
-    const trimmed = sql.trim().toUpperCase();
-    if (!trimmed.startsWith('SELECT') && !trimmed.startsWith('WITH') && !trimmed.startsWith('EXPLAIN')) {
+    const trimmed = sql.trim();
+    const upper = trimmed.toUpperCase();
+
+    // Must start with SELECT, WITH (for CTEs), or EXPLAIN
+    if (!upper.startsWith('SELECT') && !upper.startsWith('WITH') && !upper.startsWith('EXPLAIN')) {
       throw new Error('Only SELECT, WITH, and EXPLAIN queries are allowed in read-only mode');
     }
 
-    // Block dangerous patterns
-    const dangerous = ['DROP', 'DELETE', 'INSERT', 'UPDATE', 'ALTER', 'CREATE', 'ATTACH', 'DETACH'];
+    // Block dangerous keywords using word boundary matching
+    // This prevents false positives like column names containing these words
+    const dangerous = [
+      'INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'CREATE',
+      'ATTACH', 'DETACH', 'REPLACE', 'TRUNCATE',
+      'PRAGMA', 'VACUUM', 'REINDEX', 'ANALYZE'
+    ];
+
     for (const keyword of dangerous) {
-      if (trimmed.includes(keyword)) {
+      // Match keyword as whole word (not part of identifier)
+      const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+      if (regex.test(sql)) {
         throw new Error(`Query contains forbidden keyword: ${keyword}`);
       }
+    }
+
+    // Block semicolons to prevent multi-statement attacks
+    // (SQLite's better-sqlite3 already blocks this, but belt-and-suspenders)
+    if (sql.includes(';') && sql.indexOf(';') < sql.length - 1) {
+      throw new Error('Multiple statements are not allowed');
     }
   }
 

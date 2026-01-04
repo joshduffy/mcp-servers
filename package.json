@@ -1,6 +1,6 @@
 {
   "name": "mcp-servers-cli",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Privacy-first MCP servers for Claude - Linear, Postgres, Notion, Obsidian",
   "main": "cli/dist/index.js",
   "bin": {

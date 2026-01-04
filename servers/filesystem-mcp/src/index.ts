@@ -10,9 +10,10 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import fg from 'fast-glob';
 import ignore from 'ignore';
-import { readFile, readdir, stat, access } from 'node:fs/promises';
+import { readFile, readdir, stat, access, realpath } from 'node:fs/promises';
 import { resolve, relative, join, basename, dirname } from 'node:path';
 import { homedir } from 'node:os';
+import { realpathSync } from 'node:fs';
 
 // Configuration
 const FS_ROOT = process.env.FS_ROOT?.replace(/^~/, homedir()) || process.cwd();
@@ -39,20 +40,43 @@ const DEFAULT_IGNORES = [
 // Create ignore filter
 const ig = ignore().add(DEFAULT_IGNORES);
 
+// Get the real root path (resolving any symlinks in FS_ROOT itself)
+let REAL_ROOT: string;
+try {
+  REAL_ROOT = realpathSync(FS_ROOT);
+} catch {
+  REAL_ROOT = resolve(FS_ROOT);
+}
+
 // Resolve and validate path is within root
 function resolvePath(inputPath: string): string {
   const expanded = inputPath.replace(/^~/, homedir());
   const resolved = resolve(FS_ROOT, expanded);
 
-  // Security: ensure path is within root
+  // Security: ensure path is within root (before symlink resolution)
   const normalizedRoot = resolve(FS_ROOT);
   const normalizedPath = resolve(resolved);
 
-  if (!normalizedPath.startsWith(normalizedRoot)) {
+  if (!normalizedPath.startsWith(normalizedRoot + '/') && normalizedPath !== normalizedRoot) {
     throw new Error(`Access denied: path is outside root directory`);
   }
 
   return normalizedPath;
+}
+
+// Validate that a resolved path (after potential symlink resolution) is within root
+async function validateRealPath(path: string): Promise<void> {
+  try {
+    const real = await realpath(path);
+    if (!real.startsWith(REAL_ROOT + '/') && real !== REAL_ROOT) {
+      throw new Error(`Access denied: symlink points outside root directory`);
+    }
+  } catch (error) {
+    // If realpath fails (file doesn't exist), the initial path check is sufficient
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error;
+    }
+  }
 }
 
 // Get relative path from root
@@ -411,6 +435,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const filePath = resolvePath(path);
 
         await access(filePath);
+        await validateRealPath(filePath); // Security: check symlinks
         const { content, truncated, binary } = await readFileContent(filePath);
 
         if (binary) {
@@ -433,6 +458,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           try {
             const filePath = resolvePath(path);
             await access(filePath);
+            await validateRealPath(filePath); // Security: check symlinks
             const { content, truncated, binary } = await readFileContent(filePath);
 
             if (binary) {

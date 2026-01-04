@@ -9,7 +9,7 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join, relative, basename, extname } from 'node:path';
+import { join, relative, basename, extname, resolve } from 'node:path';
 import matter from 'gray-matter';
 
 // Configuration
@@ -220,15 +220,23 @@ function searchNotes(query: string): SearchResult[] {
 function readNote(notePath: string): { content: string; metadata: NoteMetadata } | null {
   refreshCache();
 
-  // Handle both relative and absolute paths
-  let fullPath = notePath;
-  if (!notePath.startsWith('/')) {
-    fullPath = join(VAULT_PATH, notePath);
-  }
+  // Security: Always resolve paths relative to vault, never allow absolute paths
+  let fullPath: string;
+
+  // Strip any leading slashes to prevent absolute path access
+  const safePath = notePath.replace(/^\/+/, '');
+  fullPath = join(VAULT_PATH, safePath);
 
   // Add .md extension if missing
   if (!fullPath.endsWith('.md')) {
     fullPath += '.md';
+  }
+
+  // Security: Verify the resolved path is within the vault
+  const resolvedPath = resolve(fullPath);
+  const resolvedVault = resolve(VAULT_PATH);
+  if (!resolvedPath.startsWith(resolvedVault + '/') && resolvedPath !== resolvedVault) {
+    return null; // Path traversal attempt
   }
 
   if (!existsSync(fullPath)) {
@@ -242,6 +250,12 @@ function readNote(notePath: string): { content: string; metadata: NoteMetadata }
   }
 
   if (!existsSync(fullPath)) {
+    return null;
+  }
+
+  // Security: Re-verify after title lookup
+  const finalPath = resolve(fullPath);
+  if (!finalPath.startsWith(resolvedVault + '/') && finalPath !== resolvedVault) {
     return null;
   }
 
